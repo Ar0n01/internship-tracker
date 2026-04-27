@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiken - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="stats-page">
+    <h1>📊 Statistiken</h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>{{ stats.total_jobs }}</h3>
+            <p>Gesamt Stellen</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ stats.companies }}</h3>
+            <p>Unternehmen</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ stats.total_scans }}</h3>
+            <p>Durchgeführte Scans</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ stats.today_new }}</h3>
+            <p>Heute neu</p>
+        </div>
+    </div>
+    
+    <h2>📈 Scan-Historie</h2>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Quelle</th>
+                <th>Verarbeitet</th>
+                <th>Neu</th>
+                <th>Unverändert</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for scan in history %}
+            <tr>
+                <td>{{ scan.scan_date }}</td>
+                <td><small>{{ scan.source }}</small></td>
+                <td>{{ scan.processed }}</td>
+                <td class="new">+{{ scan.new }}</td>
+                <td class="unchanged">{{ scan.unchanged }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.history-table th, .history-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.history-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.history-table tr:hover {
+    background: #f9f9f9;
+}
+
+.history-table .new {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.history-table .unchanged {
+    color: #666;
+}
+</style>
+{% endblock %}

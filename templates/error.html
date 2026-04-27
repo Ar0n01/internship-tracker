@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Fehler - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>❌ Fehler</h1>
+    <p>{{ error }}</p>
+    <a href="{{ url_for('dashboard') }}" class="btn">Zurück zum Dashboard</a>
+</div>
+
+<style>
+.error-page {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.error-page h1 {
+    color: #d32f2f;
+}
+</style>
+{% endblock %}

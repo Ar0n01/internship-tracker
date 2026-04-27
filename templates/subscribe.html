@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Newsletter abonnieren - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="subscribe-page">
+    <div class="subscribe-panel">
+        <div class="subscribe-header">
+            <div>
+                <h1>📩 Newsletter abonnieren</h1>
+                <p>Erhalte neue Internship-Positionen per E-Mail für ausgewählte Unternehmen.</p>
+            </div>
+        </div>
+
+        <form method="POST" class="subscribe-form">
+            <div class="subscribe-row">
+                <div class="subscribe-email-field">
+                    <label for="email">E-Mail-Adresse</label>
+                    <input id="email" name="email" type="email" placeholder="name@example.com" required value="{{ request.form.email or '' }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Abonnieren</button>
+            </div>
+
+            <div class="company-dropdown">
+                <button type="button" class="dropdown-toggle" id="toggleCompanies">Unternehmen auswählen</button>
+                <div class="dropdown-panel" id="companyPanel">
+                    <div class="dropdown-actions">
+                        <button type="button" class="btn btn-secondary" id="selectAll">Alles wählen</button>
+                        <button type="button" class="btn btn-secondary" id="deselectAll">Alles abwählen</button>
+                    </div>
+                    <div class="company-checkboxes">
+                        {% for company in companies %}
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="companies" value="{{ company }}" {% if company in selected_companies %}checked{% endif %}>
+                            <span>{{ company }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if error %}
+        <div class="alert alert-error">
+            {{ error }}
+        </div>
+        {% elif message %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <div class="company-dropdown">
+            <button type="button" class="dropdown-toggle" id="toggleCompanies">Unternehmen auswählen</button>
+            <div class="dropdown-panel" id="companyPanel">
+                <div class="dropdown-actions">
+                    <button type="button" class="btn btn-secondary" id="selectAll">Alles wählen</button>
+                    <button type="button" class="btn btn-secondary" id="deselectAll">Alles abwählen</button>
+                </div>
+                <div class="company-checkboxes">
+                    {% for company in companies %}
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="companies" value="{{ company }}" {% if company in selected_companies %}checked{% endif %}>
+                        <span>{{ company }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.subscribe-page {
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+}
+.subscribe-panel {
+    width: min(100%, 960px);
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.06);
+    padding: 32px;
+}
+.subscribe-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+.subscribe-header h1 {
+    margin: 0 0 10px;
+    font-size: clamp(2rem, 2.5vw, 2.6rem);
+}
+.subscribe-header p {
+    margin: 0;
+    color: #475569;
+    max-width: 620px;
+}
+.subscribe-form {
+    display: grid;
+    gap: 18px;
+}
+.subscribe-row {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+}
+.subscribe-email-field {
+    display: flex;
+    flex-direction: column;
+}
+.subscribe-email-field label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #102a43;
+}
+.subscribe-email-field input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 1rem;
+}
+.company-dropdown {
+    margin-top: 16px;
+}
+.dropdown-toggle {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 1rem;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+.dropdown-panel {
+    margin-top: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 18px;
+    background: #f8fafc;
+    display: none;
+}
+.dropdown-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.company-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+}
+.checkbox-option input {
+    width: 18px;
+    height: 18px;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+}
+.btn-secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.btn:hover {
+    transform: translateY(-1px);
+}
+.alert {
+    padding: 18px 20px;
+    border-radius: 14px;
+    margin-top: 16px;
+}
+.alert-error {
+    background: #fff1f2;
+    color: #9f1239;
+    border: 1px solid #fca5a5;
+}
+.alert-success {
+    background: #ecfdf5;
+    color: #166534;
+    border: 1px solid #6ee7b7;
+}
+@media (max-width: 720px) {
+    .subscribe-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .subscribe-inline-form {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+const toggleButton = document.getElementById('toggleCompanies');
+const companyPanel = document.getElementById('companyPanel');
+const selectAllButton = document.getElementById('selectAll');
+const deselectAllButton = document.getElementById('deselectAll');
+
+if (toggleButton && companyPanel) {
+    toggleButton.addEventListener('click', () => {
+        companyPanel.style.display = companyPanel.style.display === 'block' ? 'none' : 'block';
+        toggleButton.textContent = companyPanel.style.display === 'block' ? 'Unternehmen ausblenden' : 'Unternehmen auswählen';
+    });
+}
+
+if (selectAllButton) {
+    selectAllButton.addEventListener('click', () => {
+        document.querySelectorAll('#companyPanel input[name="companies"]').forEach(checkbox => checkbox.checked = true);
+    });
+}
+
+if (deselectAllButton) {
+    deselectAllButton.addEventListener('click', () => {
+        document.querySelectorAll('#companyPanel input[name="companies"]').forEach(checkbox => checkbox.checked = false);
+    });
+}
+</script>
+{% endblock %}

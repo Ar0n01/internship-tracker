@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="page-actions" style="display:flex; justify-content:flex-end; gap:12px; margin-bottom:16px;">
+        <a href="{{ url_for('subscribe') }}" class="btn btn-primary" style="padding: 10px 16px; font-size:0.95rem;">E-Mail-Benachrichtigungen abonnieren</a>
+    </div>
+
+    <h1>🎯 Internship Tracker Dashboard</h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>{{ total_jobs }}</h3>
+            <p>Stellen gefunden</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ company_options|length }}</h3>
+            <p>Unternehmen</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ history|length }}</h3>
+            <p>Scans durchgeführt</p>
+        </div>
+    </div>
+
+    <style>
+        .filter-panel {
+            margin-top: 24px;
+            padding: 18px 20px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        .filter-form {
+            display: contents;
+        }
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .filter-field label {
+            font-weight: 600;
+            color: #102a43;
+        }
+        .filter-field select {
+            width: 100%;
+            min-width: 0;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #102a43;
+            font-size: 0.95rem;
+        }
+        .filter-action {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .filter-action .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+        .jobs-table-wrapper {
+            margin-top: 24px;
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+        }
+        .jobs-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+        .jobs-table th,
+        .jobs-table td {
+            padding: 16px 18px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .jobs-table thead th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .jobs-table tbody tr:hover {
+            background: #f8fbff;
+        }
+        .jobs-table td a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .jobs-table td a:hover {
+            text-decoration: underline;
+        }
+        .empty-state {
+            margin-top: 24px;
+            padding: 24px;
+            background: #f8fafc;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            color: #0f172a;
+        }
+    </style>
+
+    <div class="filter-panel">
+        <form method="GET" class="filter-form">
+            <div class="filter-field">
+                <label for="company">Firma</label>
+                <select id="company" name="company">
+                    <option value="all" {% if selected_company == 'all' %}selected{% endif %}>Alle Unternehmen</option>
+                    {% for company in company_options %}
+                    <option value="{{ company }}" {% if selected_company == company %}selected{% endif %}>{{ company }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="posted">Veröffentlichung</label>
+                <select id="posted" name="posted">
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>Alle Zeiträume</option>
+                    <option value="1" {% if selected_period == '1' %}selected{% endif %}>+1 day</option>
+                    <option value="3" {% if selected_period == '3' %}selected{% endif %}>+3 days</option>
+                    <option value="7" {% if selected_period == '7' %}selected{% endif %}>+7 days</option>
+                </select>
+            </div>
+            <div class="filter-field filter-action">
+                <button type="submit" class="btn btn-primary">Filter anwenden</button>
+            </div>
+        </form>
+    </div>
+
+    {% if total_jobs == 0 %}
+    <div class="empty-state">
+        {% if selected_company != 'all' or selected_period != 'all' %}
+        <p>Keine Stellen gefunden, die zu Ihren Filtern passen. <a href="{{ url_for('dashboard') }}">Filter zurücksetzen</a></p>
+        {% else %}
+        <p>Keine Stellen gefunden. <a href="{{ url_for('add_source') }}">Starten Sie mit dem Hinzufügen einer Karriereseite</a></p>
+        {% endif %}
+    </div>
+    {% else %}
+
+    <div class="jobs-table-wrapper">
+        <table class="jobs-table">
+            <thead>
+                <tr>
+                    <th>Unternehmen</th>
+                    <th>Internship Name</th>
+                    <th>Standort</th>
+                    <th>Veröffentlicht</th>
+                    <th>Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>{{ job.company or 'Unbekannt' }}</td>
+                    <td>{{ job.title or 'Unbenannte Stelle' }}</td>
+                    <td>{{ job.location or 'Unbekannt' }}</td>
+                    <td>{{ job.published_date or job.posted_date or 'Keine Angabe' }}</td>
+                    <td>
+                        {% if job.link %}
+                        <a href="{{ job.link }}" target="_blank">Anzeigen</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% endif %}
+
+    <div class="recent-scans">
+        <h3>Letzte Scans</h3>
+        <ul class="scan-history">
+            {% for scan in history %}
+            <li>
+                <strong>{{ scan.scan_date }}</strong> - 
+                {{ scan.processed }} Stellen gescannt 
+                ({{ scan.new }} neu, {{ scan.unchanged }} unverändert)
+                <br>
+                <small>{{ scan.source }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Quelle hinzufügen - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="add-source-form">
+    <h1>➕ Neue Karriereseite hinzufügen</h1>
+    
+    {% if error %}
+    <div class="alert alert-error">
+        ❌ {{ error }}
+    </div>
+    {% endif %}
+    
+    {% if success %}
+    <div class="alert alert-success">
+        ✅ Erfolgreich gescannt!
+        <p>{{ jobs_found }} Stelle(n) verarbeitet</p>
+        <p>{{ summary.new }} neue Stelle(n), {{ summary.unchanged }} unveränderte</p>
+        {% if notification_result %}
+        <p>Benachrichtigungen gesendet: {{ notification_result.sent }}</p>
+        {% if notification_result.errors %}
+        <p style="color:#721c24;">Fehler beim Senden an {{ notification_result.errors | length }} E-Mail(s).</p>
+        {% endif %}
+        {% endif %}
+        <a href="{{ url_for('dashboard') }}" class="btn">Zum Dashboard</a>
+    </div>
+    {% else %}
+    
+    <form method="POST" class="form-group">
+        <div class="form-field">
+            <label for="url">Karriereseite URL:</label>
+            <input 
+                type="url" 
+                id="url" 
+                name="url" 
+                placeholder="https://example.com/careers"
+                required
+            >
+            <small>Geben Sie die URL der Karriereseite ein. Diese wird gescannt und alle Praktikumsstellen extrahiert.</small>
+        </div>
+        
+        <div class="form-field checkbox-field">
+            <label for="use_browser" class="checkbox-label">
+                <input type="checkbox" id="use_browser" name="use_browser">
+                <span class="checkmark"></span>
+                Browser-Automation verwenden (für JavaScript-lastige Seiten wie Workday)
+            </label>
+            <small>Bei modernen Karriereseiten (z.B. Workday, Greenhouse) die Stellen erst nach dem Laden erscheinen, aktivieren Sie diese Option.</small>
+        </div>
+
+        <div class="form-field checkbox-field">
+            <label for="use_screenshot" class="checkbox-label">
+                <input type="checkbox" id="use_screenshot" name="use_screenshot">
+                <span class="checkmark"></span>
+                Screenshot-Analyse verwenden (für dynamische Seiten oder Tabellen)
+            </label>
+            <small>Erstellt einen kompletten Screenshot der Seite und extrahiert die Stellen daraus. Nützlich, wenn reguläres Scraping nicht alle Inhalte erfasst.</small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">🔍 Seite scannen</button>
+    </form>
+    
+    <div class="info-box">
+        <h3>Wie es funktioniert:</h3>
+        <ol>
+            <li>Geben Sie die URL einer Karriereseite ein</li>
+            <li>Das System ruft die Seite auf und extrahiert alle Praktikumsstellen</li>
+            <li>Claude AI analysiert die Seite automatisch</li>
+            <li>Neue Stellen werden mit heute als Veröffentlichungsdatum gespeichert</li>
+            <li>Bereits bekannte Stellen behalten ihr ursprüngliches Datum</li>
+        </ol>
+    </div>
+    
+    {% endif %}
+</div>
+
+<style>
+.add-source-form {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-field {
+    margin-bottom: 20px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-field input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.form-field small {
+    display: block;
+    margin-top: 6px;
+    color: #666;
+}
+
+.btn {
+    padding: 12px 24px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background: #45a049;
+}
+
+.btn-primary {
+    width: 100%;
+}
+
+.alert {
+    padding: 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.info-box {
+    margin-top: 30px;
+    padding: 16px;
+    background: #f5f5f5;
+    border-left: 4px solid #4CAF50;
+    border-radius: 4px;
+}
+
+.info-box ol {
+    margin-top: 12px;
+    padding-left: 20px;
+}
+
+.checkbox-field {
+    margin-bottom: 20px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+    margin-bottom: 8px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.checkmark {
+    margin-left: 5px;
+}
+</style>
+{% endblock %}
