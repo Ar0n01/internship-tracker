@@ -11,6 +11,7 @@ Ein automatisiertes System zur Verfolgung von Praktikumsstellen im Internet. Das
   - Für neue Stellen ohne Datum wird das heutige Datum als Veröffentlichungsdatum gespeichert
   - Bereits bekannte Stellen behalten ihr ursprüngliches Datum
 - **Web-Dashboard**: Benutzerfreundliche Oberfläche zur Verwaltung und Anzeige
+- **E-Mail-Newsletter**: Abonnements für neue Internship-Positionen nach Unternehmen
 - **JSON-Speicherung**: Einfache, textbasierte Datenspeicherung
 - **Cron-Job Integration**: Automatisierte tägliche Scans auf macOS/Linux
 
@@ -48,7 +49,10 @@ Erhalten Sie einen API-Schlüssel von: https://console.anthropic.com
 ```bash
 python3 app.py
 ```
-Das Dashboard ist dann unter `http://localhost:5000` erreichbar.
+Das Dashboard ist dann unter `http://127.0.0.1:8000` erreichbar.
+
+### Newsletter abonnieren
+Öffne `http://127.0.0.1:8000/subscribe`, gib deine E-Mail-Adresse ein und wähle die Unternehmen aus, für die du Benachrichtigungen erhalten möchtest.
 
 ### Neue Karriereseite hinzufügen
 1. Öffnen Sie das Dashboard
