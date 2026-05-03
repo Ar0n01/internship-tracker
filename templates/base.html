@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Internship Tracker{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="{{ url_for('dashboard') }}" class="logo">🎯 Internship Tracker</a>
+            <a href="{{ url_for('dashboard') }}" class="logo">Internship Tracker</a>
             <ul class="nav-links">
                 <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('add_source') }}">+ Neue Seite</a></li>
                 <li><a href="{{ url_for('stats') }}">Statistiken</a></li>
             </ul>
         </div>
@@ -23,6 +23,11 @@
     </div>
 
     <footer>
+        <div class="footer-links">
+            <a href="{{ url_for('imprint') }}">Impressum</a>
+            <a href="{{ url_for('privacy') }}">Datenschutz</a>
+            <a href="{{ url_for('terms') }}">AGB</a>
+        </div>
         <p>&copy; 2025 Internship Tracker | Automatisierte Stellenverfolgung</p>
     </footer>
 </body>

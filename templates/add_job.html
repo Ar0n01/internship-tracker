@@ -40,24 +40,6 @@
             <small>Geben Sie die URL der Karriereseite ein. Diese wird gescannt und alle Praktikumsstellen extrahiert.</small>
         </div>
         
-        <div class="form-field checkbox-field">
-            <label for="use_browser" class="checkbox-label">
-                <input type="checkbox" id="use_browser" name="use_browser">
-                <span class="checkmark"></span>
-                Browser-Automation verwenden (für JavaScript-lastige Seiten wie Workday)
-            </label>
-            <small>Bei modernen Karriereseiten (z.B. Workday, Greenhouse) die Stellen erst nach dem Laden erscheinen, aktivieren Sie diese Option.</small>
-        </div>
-
-        <div class="form-field checkbox-field">
-            <label for="use_screenshot" class="checkbox-label">
-                <input type="checkbox" id="use_screenshot" name="use_screenshot">
-                <span class="checkmark"></span>
-                Screenshot-Analyse verwenden (für dynamische Seiten oder Tabellen)
-            </label>
-            <small>Erstellt einen kompletten Screenshot der Seite und extrahiert die Stellen daraus. Nützlich, wenn reguläres Scraping nicht alle Inhalte erfasst.</small>
-        </div>
-        
         <button type="submit" class="btn btn-primary">🔍 Seite scannen</button>
     </form>
     
@@ -160,25 +142,6 @@
     padding-left: 20px;
 }
 
-.checkbox-field {
-    margin-bottom: 20px;
-}
 
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-weight: normal;
-    margin-bottom: 8px;
-}
-
-.checkbox-label input[type="checkbox"] {
-    margin-right: 10px;
-    transform: scale(1.2);
-}
-
-.checkmark {
-    margin-left: 5px;
-}
 </style>
 {% endblock %}

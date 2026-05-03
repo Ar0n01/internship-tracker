@@ -3,5 +3,15 @@
     "url": "https://example.com/careers",
     "name": "Example Company",
     "enabled": true
+  },
+  {
+    "url": "https://www.rothschildandco.com/en/careers/students-and-graduates/opportunities/?page=1&taxonomy_1156=733&taxonomy_1155=725,726",
+    "name": "Rothschild & Co",
+    "enabled": true
+  },
+  {
+    "url": "https://group.bnpparibas/en/careers/all-job-offers/trainee-internship/germany?q=M%26A",
+    "name": "BNP Paribas",
+    "enabled": true
   }
 ]

@@ -2,6 +2,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from datetime import datetime, timedelta
 from email.message import EmailMessage
+import json
+import os
 import smtplib
 import ssl
 import requests
@@ -36,6 +38,26 @@ def send_email(to_address: str, subject: str, body: str) -> dict:
         return {'success': True}
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+def load_source_config() -> list:
+    config_path = os.path.join(os.path.dirname(__file__), 'config_sources.json')
+    if not os.path.exists(config_path):
+        return []
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def get_new_company_notice() -> list:
+    history = tracker.load_history()
+    for scan in reversed(history):
+        companies = scan.get('new_companies')
+        if companies:
+            return companies
+    return []
 
 
 def notify_subscribers(new_jobs: list) -> dict:
@@ -93,50 +115,22 @@ def dashboard():
     """Zeigt das Dashboard mit allen Stellen"""
     all_jobs = tracker.get_all_jobs()
     
-    # Filter-Parameter aus der URL
-    selected_company = request.args.get('company', 'all')
-    selected_period = request.args.get('posted', 'all')
-    
-    # Alle verfügbaren Firmen für die Filterauswahl
-    company_options = sorted({job.get('company', 'Unbekannt') or 'Unbekannt' for job in all_jobs})
-    
-    # Anwenden des Firmenfilters
     jobs = all_jobs
-    if selected_company != 'all':
-        jobs = [job for job in jobs if (job.get('company') or 'Unbekannt') == selected_company]
-    
-    # Anwenden der Datumsfilter
-    if selected_period in {'1', '3', '7'}:
-        try:
-            now = datetime.now()
-            days = int(selected_period)
-            cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            lower_bound = cutoff - timedelta(days=days)
-            filtered = []
-            for job in jobs:
-                published = job.get('published_date') or job.get('posted_date')
-                if not published:
-                    continue
-                try:
-                    published_date = datetime.strptime(published[:10], '%Y-%m-%d')
-                except ValueError:
-                    continue
-                if published_date >= lower_bound:
-                    filtered.append(job)
-            jobs = filtered
-        except Exception:
-            pass
-    
+    company_options = sorted({job.get('company', 'Unbekannt') or 'Unbekannt' for job in all_jobs})
+
     # Lade auch die Historie für Statistiken
     history = tracker.load_history()
+    source_config = load_source_config()
+    new_companies = get_new_company_notice()
+    tracked_sources = [source.get('name') or source.get('url') for source in source_config if source.get('enabled', True)]
     
-    return render_template('dashboard.html', 
-                         jobs=jobs, 
+    return render_template('dashboard.html',
+                         jobs=jobs,
                          company_options=company_options,
-                         selected_company=selected_company,
-                         selected_period=selected_period,
                          total_jobs=len(jobs),
-                         history=history[-5:] if history else [])
+                         history=history[-5:] if history else [],
+                         tracked_sources=tracked_sources,
+                         new_companies=new_companies)
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_source():
@@ -151,29 +145,11 @@ def add_source():
             url = 'https://' + url
         
         try:
-            # Prüfe, ob Browser-Automation gewünscht ist
-            use_browser = request.form.get('use_browser') == 'on'
-            # Prüfe, ob Screenshot API gewünscht ist
-            use_screenshot = request.form.get('use_screenshot') == 'on'
-            
-            screenshot_data = None
-            screenshot_error = None
-            
-            if use_screenshot:
-                # Screenshot-Aufnahme verwenden und daraus extrahieren
-                screenshot_result = extractor.capture_screenshot_via_api(url)
-                if not screenshot_result.get('success'):
-                    return render_template('add_job.html', error=f"Fehler beim Screenshot: {screenshot_result.get('error')}")
-                screenshot_data = screenshot_result.get('screenshot')
-                result = extractor.extract_from_screenshot(screenshot_data, url)
-            elif use_browser:
-                # Browser-Automation verwenden
-                result = extractor.extract_from_url_with_browser(url)
-            else:
-                # Normales HTML-Scraping
-                response = requests.get(url, timeout=10)
-                response.raise_for_status()
-                result = extractor.extract_from_html_content(response.text, url)
+            screenshot_result = extractor.capture_screenshot_via_api(url)
+            if not screenshot_result.get('success'):
+                return render_template('add_job.html', error=f"Fehler beim Screenshot: {screenshot_result.get('error')}")
+            screenshot_data = screenshot_result.get('screenshot')
+            result = extractor.extract_from_screenshot(screenshot_data, url)
             
             if not result['success']:
                 return render_template('add_job.html', error=f"Fehler beim Extrahieren: {result.get('error')}")
@@ -191,14 +167,12 @@ def add_source():
             # Sende E-Mail-Benachrichtigungen für neue Jobs
             new_jobs_for_notifications = [job for job in processed_jobs if job.get('first_seen') == datetime.now().strftime('%Y-%m-%d')]
             notification_result = notify_subscribers(new_jobs_for_notifications)
-            
-            return render_template('add_job.html', 
+
+            return render_template('add_job.html',
                                  success=True,
                                  summary=summary,
                                  jobs_found=len(processed_jobs),
-                                 notification_result=notification_result,
-                                 screenshot_data=screenshot_data,
-                                 screenshot_error=screenshot_error)
+                                 notification_result=notification_result)
         
         except requests.RequestException as e:
             return render_template('add_job.html', error=f"Netzwerkfehler: {str(e)}")
@@ -256,6 +230,18 @@ def subscribe():
             message = 'Danke! Deine E-Mail-Benachrichtigungen wurden gespeichert.'
 
     return render_template('subscribe.html', companies=companies, message=message, error=error, selected_companies=selected_companies)
+
+@app.route('/impressum')
+def imprint():
+    return render_template('imprint.html')
+
+@app.route('/datenschutz')
+def privacy():
+    return render_template('privacy.html')
+
+@app.route('/agb')
+def terms():
+    return render_template('terms.html')
 
 @app.errorhandler(404)
 def not_found(error):

@@ -133,8 +133,11 @@ class InternshipTracker:
             'scan_date': today
         }
         
+        new_companies = set()
         for new_job in new_jobs:
             exists, existing_job = self._find_existing_job(new_job, existing_jobs)
+            
+            company_name = (new_job.get('company') or 'Unbekannt').strip()
             
             if exists:
                 # Stelle existiert schon
@@ -148,6 +151,8 @@ class InternshipTracker:
                 new_job['published_date'] = new_job.get('posted_date') or today
                 new_job['first_seen'] = today
                 summary['new'] += 1
+                if company_name:
+                    new_companies.add(company_name)
             
             # Füge Metadaten hinzu
             new_job['last_updated'] = today
@@ -156,6 +161,8 @@ class InternshipTracker:
             
             processed_jobs.append(new_job)
             summary['processed'] += 1
+
+        summary['new_companies'] = sorted(new_companies)
         
         return processed_jobs, summary
     

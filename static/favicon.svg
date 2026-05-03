@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#4f46e5"/>
+  <!-- Bar chart bars -->
+  <rect x="5" y="20" width="5" height="7" rx="1" fill="white" opacity="0.6"/>
+  <rect x="13" y="14" width="5" height="13" rx="1" fill="white" opacity="0.8"/>
+  <rect x="21" y="8" width="5" height="19" rx="1" fill="white"/>
+  <!-- Upward trend line -->
+  <polyline points="7,19 16,13 26,7" stroke="#a5f3fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="26" cy="7" r="2" fill="#a5f3fc"/>
+</svg>
