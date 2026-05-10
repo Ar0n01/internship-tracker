@@ -15,13 +15,10 @@ class Config:
     SCREENSHOT_API_KEY = os.getenv('SCREENSHOT_API_KEY')
     SCREENSHOT_API_BASE = os.getenv('SCREENSHOT_API_BASE', 'https://shot.screenshotapi.net/v3/screenshot')
 
-    # SMTP / E-Mail
-    SMTP_SERVER = os.getenv('SMTP_SERVER')
-    SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
-    SMTP_USER = os.getenv('SMTP_USER')
-    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
-    EMAIL_FROM = os.getenv('EMAIL_FROM', 'no-reply@example.com')
-    EMAIL_ENABLED = os.getenv('EMAIL_ENABLED', 'false').lower() == 'true'
+    # Brevo (E-Mail)
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+    EMAIL_FROM_NAME = 'InternshipTracker'
+    EMAIL_FROM = 'sarah.himmel22@gmail.com'
 
     # Datenspeicherung
     DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')

@@ -50,7 +50,7 @@ class InternshipTracker:
         with open(self.subscriptions_file, 'w', encoding='utf-8') as f:
             json.dump(subscriptions, f, ensure_ascii=False, indent=2)
 
-    def add_subscription(self, email: str, companies: List[str]):
+    def add_subscription(self, email: str, companies: List[str], first_name: str = '', last_name: str = ''):
         """Legt ein neues Abonnement an oder aktualisiert das bestehende"""
         email = email.strip().lower()
         companies = sorted({company.strip() for company in companies if company.strip()})
@@ -62,9 +62,15 @@ class InternshipTracker:
         if existing:
             existing['companies'] = companies
             existing['updated_at'] = today
+            if first_name:
+                existing['first_name'] = first_name
+            if last_name:
+                existing['last_name'] = last_name
         else:
             subscriptions.append({
                 'email': email,
+                'first_name': first_name,
+                'last_name': last_name,
                 'companies': companies,
                 'subscribed_at': today,
                 'updated_at': today
@@ -214,6 +220,34 @@ class InternshipTracker:
         with open(self.history_file, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
     
+    def apply_source_url_fallback(self, source_url: str, processed_jobs: List[Dict]):
+        """Setzt die Source-URL als Link für alle Jobs ohne individuellen Link."""
+        job_ids = {j.get('job_id') for j in processed_jobs}
+        jobs = self.load_current_jobs()
+        changed = False
+        for job in jobs:
+            if job.get('job_id') in job_ids and not job.get('link'):
+                job['link'] = source_url
+                changed = True
+        if changed:
+            with open(self.jobs_file, 'w', encoding='utf-8') as f:
+                json.dump(jobs, f, ensure_ascii=False, indent=2)
+
+    def update_job_links(self, link_map: Dict):
+        """Aktualisiert die Links von Jobs anhand einer {job_id: url} Map"""
+        if not link_map:
+            return
+        jobs = self.load_current_jobs()
+        changed = False
+        for job in jobs:
+            job_id = job.get('job_id', '')
+            if job_id in link_map and link_map[job_id]:
+                job['link'] = link_map[job_id]
+                changed = True
+        if changed:
+            with open(self.jobs_file, 'w', encoding='utf-8') as f:
+                json.dump(jobs, f, ensure_ascii=False, indent=2)
+
     def get_all_jobs(self) -> List[Dict]:
         """Gibt alle aktuellen Jobs sortiert nach Veröffentlichungsdatum zurück"""
         jobs = self.load_current_jobs()

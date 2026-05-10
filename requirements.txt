@@ -3,3 +3,5 @@ python-dotenv==1.0.0
 anthropic==0.18.1
 requests==2.31.0
 playwright==1.40.0
+sib-api-v3-sdk
+apscheduler

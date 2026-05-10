@@ -13,5 +13,10 @@
     "url": "https://group.bnpparibas/en/careers/all-job-offers/trainee-internship/germany?q=M%26A",
     "name": "BNP Paribas",
     "enabled": true
+  },
+  {
+    "url": "https://raymondjames.taleo.net/careersection/raymond+james+external+career+section+uk2fgermany/jobsearch.ftl?lang=en&portal=64200010414",
+    "name": "Raymond James",
+    "enabled": true
   }
 ]

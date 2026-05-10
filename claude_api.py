@@ -294,6 +294,264 @@ Beispiel Format:
             })
         return parsed
 
+    def _fetch_rendered(self, url: str, expected_terms: list = None) -> str:
+        """Fetcht eine Seite; fällt auf Playwright zurück wenn JS-Rendering nötig ist."""
+        try:
+            r = requests.get(url, timeout=15, headers={
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            })
+            html = r.text
+            if expected_terms and not any(t.lower() in html.lower() for t in expected_terms):
+                raise ValueError("Seite benötigt JS-Rendering")
+            return html[:15000]
+        except Exception:
+            try:
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True)
+                    page = browser.new_page()
+                    page.goto(url, wait_until='networkidle', timeout=30000)
+                    page.wait_for_timeout(3000)
+                    html = page.content()
+                    browser.close()
+                    return html[:15000]
+            except Exception as e:
+                return f"Fehler beim Abrufen: {e}"
+
+    def _intercept_xhr_jobs(self, url: str) -> list:
+        """
+        Lädt die Seite mit Playwright und fängt XHR-Responses ab,
+        die Job-Daten mit IDs enthalten. Gibt eine Liste von
+        {title, detail_url} zurück.
+        """
+        captured = []
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+
+                def on_response(response):
+                    ct = response.headers.get('content-type', '')
+                    if 'json' not in ct:
+                        return
+                    try:
+                        data = response.json()
+                        # Taleo-Struktur: requisitionList mit jobId
+                        items = None
+                        if isinstance(data, dict):
+                            items = data.get('requisitionList') or data.get('jobs') or data.get('jobPostings')
+                        if not items:
+                            return
+                        base_detail = url.split('jobsearch')[0] if 'jobsearch' in url else url.rsplit('/', 1)[0] + '/'
+                        for item in items:
+                            job_id = str(item.get('jobId') or item.get('id') or '')
+                            cols = item.get('column', [])
+                            title = cols[0] if cols else item.get('title', '')
+                            if job_id and title:
+                                # Taleo detail URL pattern
+                                if 'taleo' in url:
+                                    detail = url.replace('jobsearch.ftl', 'jobdetail.ftl').split('?')[0] + f'?job={job_id}&lang=en'
+                                else:
+                                    detail = urljoin(url, f'jobdetail?id={job_id}')
+                                captured.append({'title': title.strip(), 'detail_url': detail})
+                    except Exception:
+                        pass
+
+                page.on('response', on_response)
+                page.goto(url, wait_until='networkidle', timeout=30000)
+                page.wait_for_timeout(4000)
+                browser.close()
+        except Exception:
+            pass
+        return captured
+
+    def extract_detail_links(self, url: str, jobs: list) -> dict:
+        """
+        Extrahiert individuelle Job-Detail-Links.
+        Strategie 1: XHR-Interceptor (für SPAs wie Taleo).
+        Strategie 2: Claude Tool-Use mit gerenderten HTML-Inhalten.
+        Returns: {job_id: detail_url}
+        """
+        if not jobs:
+            return {}
+
+        titles = [j.get('title', '') for j in jobs if j.get('title')]
+
+        # Strategie 1: XHR-Interceptor
+        xhr_results = self._intercept_xhr_jobs(url)
+        if xhr_results:
+            result = {}
+            for job in jobs:
+                job_title = job.get('title', '').strip()
+                job_id = job.get('job_id', '')
+                for xhr in xhr_results:
+                    if xhr['title'].lower() == job_title.lower():
+                        result[job_id] = xhr['detail_url']
+                        break
+            if result:
+                return result
+
+        # Strategie 2: Claude Tool-Use mit fetch_page
+        tools = [
+            {
+                "name": "fetch_page",
+                "description": "Ruft den HTML-Inhalt einer Webseite ab.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "description": "Die URL der abzurufenden Seite"}
+                    },
+                    "required": ["url"]
+                }
+            }
+        ]
+
+        messages = [
+            {
+                "role": "user",
+                "content": (
+                    f"Extrahiere die direkten Detail-Links für folgende Stellenangebote "
+                    f"von der Karriereseite {url}:\n{json.dumps(titles, ensure_ascii=False)}\n\n"
+                    f"Nutze das fetch_page-Tool um die Seite abzurufen. "
+                    f"Antworte danach NUR mit einem JSON-Objekt {{\"Stellentitel\": \"https://...\"}}. "
+                    f"Nicht gefundene Links auf null setzen. URLs müssen absolut und vollständig sein."
+                )
+            }
+        ]
+
+        try:
+            for _ in range(5):
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    tools=tools,
+                    messages=messages
+                )
+
+                if response.stop_reason == 'tool_use':
+                    tool_block = next(b for b in response.content if b.type == 'tool_use')
+                    fetch_url = tool_block.input.get('url', url)
+                    page_content = self._fetch_rendered(fetch_url, titles)
+                    messages.append({"role": "assistant", "content": response.content})
+                    messages.append({
+                        "role": "user",
+                        "content": [{"type": "tool_result", "tool_use_id": tool_block.id, "content": page_content}]
+                    })
+                else:
+                    text = next((b.text for b in response.content if hasattr(b, 'text')), '')
+                    start = text.find('{')
+                    end = text.rfind('}') + 1
+                    if start != -1 and end > start:
+                        link_map_by_title = json.loads(text[start:end])
+                        result = {}
+                        for job in jobs:
+                            title = job.get('title', '')
+                            job_id = job.get('job_id', '')
+                            if title in link_map_by_title and link_map_by_title[title]:
+                                result[job_id] = link_map_by_title[title]
+                        return result
+                    break
+        except Exception:
+            pass
+        return {}
+
+    def normalize_job_periods(self, jobs: list) -> list:
+        """
+        Normalisiert Zeitangaben in Stellentiteln zu standardisierten Quartalsformaten.
+        Monatsmapping: Jan-Mar=Q1, Apr-Jun=Q2, Jul-Sep=Q3, Oct-Dec=Q4.
+        Speichert das Ergebnis als 'period'-Feld direkt am Job.
+        """
+        if not jobs:
+            return jobs
+
+        titles = [j.get('title', '') for j in jobs]
+
+        prompt = f"""Extrahiere den Praktikumszeitraum aus jedem Stellentitel und konvertiere ihn in das Format "Q[1-4]/[JJ]".
+
+Regeln:
+- Monate → Quartal: Jan/Feb/Mar=Q1, Apr/Mai/Jun=Q2, Jul/Aug/Sep=Q3, Okt/Nov/Dez=Q4
+- Englische Monate: Jan/Feb/Mar=Q1, Apr/May/Jun=Q2, Jul/Aug/Sep=Q3, Oct/Nov/Dec=Q4
+- Jahreszeiten: Spring=Q1/Q2, Summer=Q2/Q3, Autumn/Fall=Q3/Q4, Winter=Q4/Q1
+- H1=Q1/Q2, H2=Q3/Q4
+- Zeitraum-Ranges (z.B. "July - September"): nehme das Startquartal
+- Nur Jahr ohne Monat: einfach das Jahr zurückgeben (z.B. "2026")
+- Mehrere Quartale als kommagetrennte Liste: "Q3/26, Q4/26"
+- Kein Zeitraum erkennbar: leerer String ""
+- Jahreszahl immer zweistellig: 2026→26, 2027→27
+
+Antworte NUR mit JSON-Array:
+[{{"title": "...", "period": "Q3/26"}}]
+
+Titel:
+{json.dumps(titles, ensure_ascii=False)}"""
+
+        try:
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            text = message.content[0].text.strip()
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            if start != -1 and end > start:
+                pairs = json.loads(text[start:end])
+                period_map = {p['title']: p.get('period', '') for p in pairs}
+                for job in jobs:
+                    title = job.get('title', '')
+                    if title in period_map:
+                        job['period'] = period_map[title]
+        except Exception:
+            pass
+
+        return jobs
+
+    def clean_job_titles(self, jobs: list) -> list:
+        """
+        Bereinigt Job-Titel: Entfernt Städte- und Ländernamen die bereits
+        im Standort-Feld stehen. Gibt die Jobs mit bereinigten Titeln zurück.
+        """
+        if not jobs:
+            return jobs
+
+        pairs = [{"title": j.get("title", ""), "location": j.get("location", "")} for j in jobs]
+
+        prompt = f"""Bereinige diese Stellentitel: Entferne alle Städte- und Ländernamen aus dem Titel,
+da der Standort bereits separat gespeichert wird. Alles andere bleibt unverändert.
+
+Typische Muster die entfernt werden sollen:
+- Führende Präfixe wie "Germany - Frankfurt - " oder "Germany - "
+- Klammern mit Städten am Ende: "(Munich)", "(Frankfurt)"
+- Städtenamen nach Komma am Ende: "- Consumer, Munich" → "- Consumer"
+- Städtenamen nach Bindestrich: "- Frankfurt, Equity Capital Markets" → "- Equity Capital Markets"
+- Städtenamen nach Em-Dash: "– Frankfurt, M&A" → "– M&A"
+
+Antworte NUR mit einem JSON-Array im Format:
+[{{"original": "...", "cleaned": "..."}}]
+
+Titel und Standorte:
+{json.dumps(pairs, ensure_ascii=False)}"""
+
+        try:
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            text = message.content[0].text.strip()
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            if start != -1 and end > start:
+                cleaned_pairs = json.loads(text[start:end])
+                title_map = {p["original"]: p["cleaned"] for p in cleaned_pairs if p.get("cleaned")}
+                for job in jobs:
+                    original = job.get("title", "")
+                    if original in title_map:
+                        job["title"] = title_map[original]
+        except Exception:
+            pass
+
+        return jobs
+
     def extract_from_html_content(self, html_content: str, url: str = None) -> dict:
         """
         Extrahiert Stelleninformationen aus HTML-Inhalt

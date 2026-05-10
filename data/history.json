@@ -169,5 +169,16 @@
     "new_companies": [
       "BNP Paribas"
     ]
+  },
+  {
+    "processed": 2,
+    "new": 2,
+    "updated": 0,
+    "unchanged": 0,
+    "source": "https://raymondjames.taleo.net/careersection/raymond+james+external+career+section+uk2fgermany/jobsearch.ftl?lang=en&portal=64200010414",
+    "scan_date": "2026-05-10",
+    "new_companies": [
+      "Raymond James"
+    ]
   }
 ]

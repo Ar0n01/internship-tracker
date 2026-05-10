@@ -49,24 +49,6 @@
             {{ message }}
         </div>
         {% endif %}
-
-        <div class="company-dropdown">
-            <button type="button" class="dropdown-toggle" id="toggleCompanies">Unternehmen auswählen</button>
-            <div class="dropdown-panel" id="companyPanel">
-                <div class="dropdown-actions">
-                    <button type="button" class="btn btn-secondary" id="selectAll">Alles wählen</button>
-                    <button type="button" class="btn btn-secondary" id="deselectAll">Alles abwählen</button>
-                </div>
-                <div class="company-checkboxes">
-                    {% for company in companies %}
-                    <label class="checkbox-option">
-                        <input type="checkbox" name="companies" value="{{ company }}" {% if company in selected_companies %}checked{% endif %}>
-                        <span>{{ company }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -171,6 +153,7 @@
     border-radius: 12px;
     border: 1px solid #cbd5e1;
     cursor: pointer;
+    color: #0f172a;
 }
 .checkbox-option input {
     width: 18px;

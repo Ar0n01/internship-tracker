@@ -7,11 +7,10 @@
     <section class="dashboard-hero">
         <div class="hero-copy">
             <span class="eyebrow">Private Internship Intelligence</span>
-            <h1>Automatisch neue Praktikumsstellen erkennen und benachrichtigen lassen</h1>
+            <h1>Automatisch neue Internships im Investment Banking erkennen und benachrichtigen lassen</h1>
             <p>Scanne Karriere-Webseiten, speichere alle Einträge übersichtlich und erhalte neue Jobs genau für deine Wunschunternehmen per Mail.</p>
             <div class="hero-actions">
                 <a href="{{ url_for('add_source') }}" class="btn btn-primary">🔍 Seite scannen</a>
-                <a href="{{ url_for('subscribe') }}" class="btn btn-secondary">Newsletter abonnieren</a>
             </div>
         </div>
         <div class="hero-stats">
@@ -23,21 +22,55 @@
                 <span>Unternehmen</span>
                 <h2>{{ company_options|length }}</h2>
             </div>
-            <div class="stat-card stat-large">
-                <span>Scans</span>
-                <h2>{{ history|length }}</h2>
+        </div>
+    </section>
+
+    <section class="newsletter-section" id="newsletter">
+        <div class="newsletter-inner">
+            <div class="newsletter-copy">
+                <h2>E-Mail Newsletter</h2>
+                <p>Erhalte neue Internship-Positionen direkt per Mail – wähle einfach deine Wunschunternehmen aus.</p>
+            </div>
+            <div class="newsletter-form-wrap">
+                {% if subscribe_message %}
+                <div class="newsletter-alert newsletter-alert-success">{{ subscribe_message }}</div>
+                {% endif %}
+                {% if subscribe_error %}
+                <div class="newsletter-alert newsletter-alert-error">{{ subscribe_error }}</div>
+                {% endif %}
+
+                <form method="POST" class="newsletter-form">
+                    <div class="newsletter-name-row">
+                        <input type="text" name="first_name" placeholder="Vorname" required>
+                        <input type="text" name="last_name" placeholder="Nachname" required>
+                    </div>
+                    <div class="newsletter-row">
+                        <input type="email" name="email" placeholder="name@example.com" required>
+                        <button type="submit" class="btn btn-primary">Abonnieren</button>
+                    </div>
+                    <div class="newsletter-company-toggle">
+                        <button type="button" class="dropdown-toggle" id="nlToggle">Unternehmen auswählen</button>
+                        <div class="newsletter-company-panel" id="nlPanel" style="display:none">
+                            <input type="text" id="nlSearch" class="nl-search-input" placeholder="Unternehmen suchen...">
+                            <div class="newsletter-company-actions">
+                                <button type="button" id="nlSelectAll" class="btn btn-secondary">Alle wählen</button>
+                                <button type="button" id="nlDeselectAll" class="btn btn-secondary">Alle abwählen</button>
+                            </div>
+                            <div class="newsletter-checkboxes">
+                                {% for company in company_options %}
+                                <label class="nl-checkbox-option">
+                                    <input type="checkbox" name="companies" value="{{ company }}" {% if company in selected_companies %}checked{% endif %}>
+                                    <span>{{ company }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </section>
 
-    {% if new_companies %}
-    <section class="notice-panel">
-        <div class="new-source-banner">
-            <h2>Neues getracktes Unternehmen</h2>
-            <p>{{ new_companies | join(', ') }}</p>
-        </div>
-    </section>
-    {% endif %}
 
     <section class="dashboard-panel">
         {% if total_jobs == 0 %}
@@ -50,45 +83,36 @@
             <table class="jobs-table" id="jobs-table">
                 <thead>
                     <tr>
-                        <th class="th-filterable">
+                        <th class="th-filterable" style="width:220px">
                             <div class="th-inner">
                                 <span>Unternehmen</span>
                                 <div class="th-filter-wrap">
                                     <button class="filter-btn" data-filter="company" aria-label="Unternehmen filtern">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                                            <path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/>
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/></svg>
                                     </button>
-                                    <div class="filter-drop" id="drop-company" hidden>
-                                        <ul class="filter-list" id="list-company"></ul>
-                                    </div>
+                                    <div class="filter-drop" id="drop-company" hidden><ul class="filter-list" id="list-company"></ul></div>
                                 </div>
                             </div>
                         </th>
+                        <th style="width:130px">Zeitraum</th>
                         <th>Internship Name</th>
-                        <th class="th-filterable">
+                        <th class="th-filterable" style="width:140px">
                             <div class="th-inner">
                                 <span>Standort</span>
                                 <div class="th-filter-wrap">
                                     <button class="filter-btn" data-filter="location" aria-label="Standort filtern">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                                            <path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/>
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/></svg>
                                     </button>
-                                    <div class="filter-drop" id="drop-location" hidden>
-                                        <ul class="filter-list" id="list-location"></ul>
-                                    </div>
+                                    <div class="filter-drop" id="drop-location" hidden><ul class="filter-list" id="list-location"></ul></div>
                                 </div>
                             </div>
                         </th>
-                        <th class="th-filterable">
+                        <th class="th-filterable" style="width:150px">
                             <div class="th-inner">
                                 <span>Veröffentlicht</span>
                                 <div class="th-filter-wrap">
                                     <button class="filter-btn" data-filter="period" aria-label="Zeitraum filtern">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                                            <path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/>
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 01.628.74v2.288a2.25 2.25 0 01-.659 1.59l-4.682 4.683a2.25 2.25 0 00-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 018 18.25v-5.757a2.25 2.25 0 00-.659-1.591L2.659 6.22A2.25 2.25 0 012 4.629V2.34a.75.75 0 01.628-.74z" clip-rule="evenodd"/></svg>
                                     </button>
                                     <div class="filter-drop" id="drop-period" hidden>
                                         <ul class="filter-list" id="list-period">
@@ -101,27 +125,49 @@
                                 </div>
                             </div>
                         </th>
-                        <th>Link</th>
+                        <th style="width:90px">Link</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for job in jobs %}
-                    <tr>
-                        <td>{{ job.company or 'Unbekannt' }}</td>
-                        <td>{{ job.title or 'Unbenannte Stelle' }}</td>
-                        <td>{{ ((job.location or 'Unbekannt').split(',')[0]).strip() }}</td>
-                        <td>{{ job.published_date or job.posted_date or 'Keine Angabe' }}</td>
+                    {% for company, company_jobs in jobs_by_company.items() %}
+                    <tr class="company-row" data-company="{{ company }}">
+                        <td colspan="6">
+                            <div class="company-row-inner">
+                                <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+                                <span class="company-name">{{ company }} <span class="company-count">(+{{ company_jobs|length }})</span></span>
+                                <span class="company-periods">
+                                    {% set seen = namespace(periods=[]) %}
+                                    {% for job in company_jobs %}
+                                        {% for p in (job.period or '').split(',') %}
+                                            {% set pt = p.strip() %}
+                                            {% if pt and pt not in seen.periods %}
+                                                {% set seen.periods = seen.periods + [pt] %}
+                                                <span class="period-badge">{{ pt }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for job in company_jobs %}
+                    {% set loc = ((job.location or 'Unbekannt').split(',')[0]).strip() %}
+                    {% set date = job.published_date or job.posted_date or 'Keine Angabe' %}
+                    <tr class="job-row" data-company="{{ company }}" data-location="{{ loc }}" data-date="{{ date }}" style="display:none">
+                        <td class="job-indent"></td>
+                        <td class="job-meta">{% if job.period %}{% for p in job.period.split(',') %}<span class="period-badge">{{ p.strip() }}</span> {% endfor %}{% else %}—{% endif %}</td>
+                        <td class="job-title">{{ job.title or 'Unbenannte Stelle' }}</td>
+                        <td class="job-meta">{{ loc }}</td>
+                        <td class="job-meta">{{ date }}</td>
                         <td>
-                            {% if job.link %}
-                            <a href="{{ job.link }}" target="_blank">Anzeigen</a>
-                            {% else %}
-                            -
-                            {% endif %}
+                            {% if job.link %}<a href="{{ job.link }}" target="_blank" class="job-link">Anzeigen</a>
+                            {% else %}-{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
+                    {% endfor %}
                     <tr id="no-results-row" style="display:none">
-                        <td colspan="5" class="no-results-cell">
+                        <td colspan="6" class="no-results-cell">
                             Keine Stellen für diesen Filter gefunden.
                             <button class="reset-filters-btn" id="reset-filters">Filter zurücksetzen</button>
                         </td>
@@ -131,56 +177,85 @@
         </div>
         {% endif %}
 
-        <div class="recent-scans">
-            <h3>Letzte Scans</h3>
-            <ul class="scan-history">
-                {% for scan in history %}
-                <li>
-                    <strong>{{ scan.scan_date }}</strong> -
-                    {{ scan.processed }} Stellen gescannt
-                    ({{ scan.new }} neu, {{ scan.unchanged }} unverändert)
-                    <br>
-                    <small>{{ scan.source }}</small>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
     </section>
 </div>
 
 <script>
 (function () {
+    const nlToggle = document.getElementById('nlToggle');
+    const nlPanel  = document.getElementById('nlPanel');
+    if (nlToggle && nlPanel) {
+        nlToggle.addEventListener('click', () => {
+            const open = nlPanel.style.display === 'block';
+            nlPanel.style.display = open ? 'none' : 'block';
+            nlToggle.textContent = open ? 'Unternehmen auswählen' : 'Unternehmen ausblenden';
+        });
+        document.getElementById('nlSelectAll').addEventListener('click', () =>
+            nlPanel.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = true));
+        document.getElementById('nlDeselectAll').addEventListener('click', () =>
+            nlPanel.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false));
+        const nlSearch = document.getElementById('nlSearch');
+        if (nlSearch) {
+            nlSearch.addEventListener('input', () => {
+                const q = nlSearch.value.toLowerCase();
+                nlPanel.querySelectorAll('.nl-checkbox-option').forEach(label => {
+                    label.style.display = label.textContent.toLowerCase().includes(q) ? '' : 'none';
+                });
+            });
+        }
+    }
+})();
+
+(function () {
     const state = { company: [], location: [], period: 'all' };
+    const expanded = new Set();
     const tbody = document.querySelector('#jobs-table tbody');
     if (!tbody) return;
-    const rows = [...tbody.querySelectorAll('tr')];
 
-    function uniqueValues(colIdx) {
+    const companyRows = [...tbody.querySelectorAll('.company-row')];
+    const allJobRows  = [...tbody.querySelectorAll('.job-row')];
+
+    function uniqueValues(type) {
         const vals = new Set();
-        rows.forEach(r => {
-            const cell = r.cells[colIdx];
-            if (cell) vals.add(cell.textContent.trim());
-        });
+        if (type === 'company') companyRows.forEach(r => vals.add(r.dataset.company));
+        else if (type === 'location') allJobRows.forEach(r => { if (r.dataset.location) vals.add(r.dataset.location); });
         return [...vals].sort((a, b) => a.localeCompare(b));
     }
 
     function buildDynamicList(listEl, values, filterKey) {
         listEl.innerHTML = '';
+
+        // Search input
+        const searchLi = document.createElement('li');
+        searchLi.className = 'filter-search-item';
+        searchLi.innerHTML = '<input type="text" class="filter-search-input" placeholder="Suchen...">';
+        searchLi.addEventListener('click', e => e.stopPropagation());
+        listEl.appendChild(searchLi);
+        const searchInput = searchLi.querySelector('input');
+
+        const items = [];
         values.forEach(val => {
             const li = document.createElement('li');
             const checked = state[filterKey].includes(val) ? 'checked' : '';
             li.innerHTML = `<label><input type="checkbox" name="${filterKey}" value="${val}" ${checked}> ${val}</label>`;
             li.querySelector('input').addEventListener('change', e => {
-                if (e.target.checked) {
-                    state[filterKey].push(val);
-                } else {
-                    state[filterKey] = state[filterKey].filter(v => v !== val);
-                }
+                if (e.target.checked) state[filterKey].push(val);
+                else state[filterKey] = state[filterKey].filter(v => v !== val);
                 updateBtn(filterKey);
                 applyFilters();
             });
             listEl.appendChild(li);
+            items.push(li);
         });
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase();
+            items.forEach(li => {
+                li.style.display = li.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+
+        setTimeout(() => searchInput.focus(), 30);
     }
 
     function updateBtn(filterKey) {
@@ -209,27 +284,57 @@
         return null;
     }
 
-    function applyFilters() {
-        rows.forEach(row => {
-            const company  = row.cells[0]?.textContent.trim() || '';
-            const location = row.cells[2]?.textContent.trim() || '';
-            const dateStr  = row.cells[3]?.textContent.trim() || '';
-            let show = true;
-
-            if (state.company.length > 0 && !state.company.includes(company)) show = false;
-            if (state.location.length > 0 && !state.location.includes(location)) show = false;
-
-            if (show && state.period !== 'all') {
-                const maxDays = parseInt(state.period);
-                const daysAgo = daysAgoFromStr(dateStr);
-                if (daysAgo === null || daysAgo > maxDays) show = false;
-            }
-            row.style.display = show ? '' : 'none';
-        });
-        const anyVisible = rows.some(r => r.style.display !== 'none');
-        document.getElementById('no-results-row').style.display = anyVisible ? 'none' : '';
+    function jobPassesFilter(row) {
+        const location = row.dataset.location || '';
+        const dateStr  = row.dataset.date || '';
+        if (state.location.length > 0 && !state.location.includes(location)) return false;
+        if (state.period !== 'all') {
+            const daysAgo = daysAgoFromStr(dateStr);
+            if (daysAgo === null || daysAgo > parseInt(state.period)) return false;
+        }
+        return true;
     }
 
+    function applyFilters() {
+        let anyCompanyVisible = false;
+
+        companyRows.forEach(companyRow => {
+            const company = companyRow.dataset.company;
+            const companyVisible = state.company.length === 0 || state.company.includes(company);
+            companyRow.style.display = companyVisible ? '' : 'none';
+
+            const jobRows = allJobRows.filter(r => r.dataset.company === company);
+            const isExpanded = expanded.has(company);
+            let visibleCount = 0;
+
+            jobRows.forEach(row => {
+                const passes = jobPassesFilter(row);
+                row.style.display = (companyVisible && isExpanded && passes) ? '' : 'none';
+                if (companyVisible && passes) visibleCount++;
+            });
+
+            if (companyVisible) {
+                anyCompanyVisible = true;
+                const countEl = companyRow.querySelector('.company-count');
+                if (countEl) countEl.textContent = `(+${visibleCount})`;
+            }
+        });
+
+        document.getElementById('no-results-row').style.display = anyCompanyVisible ? 'none' : '';
+    }
+
+    // Company row click → expand/collapse
+    companyRows.forEach(row => {
+        row.addEventListener('click', () => {
+            const company = row.dataset.company;
+            if (expanded.has(company)) expanded.delete(company);
+            else expanded.add(company);
+            row.classList.toggle('expanded', expanded.has(company));
+            applyFilters();
+        });
+    });
+
+    // Filter dropdowns
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', e => {
             e.stopPropagation();
@@ -239,31 +344,27 @@
             document.querySelectorAll('.filter-drop').forEach(d => d.hidden = true);
             if (!wasOpen) {
                 drop.hidden = false;
-                if (key === 'company')  buildDynamicList(document.getElementById('list-company'),  uniqueValues(0), 'company');
-                if (key === 'location') buildDynamicList(document.getElementById('list-location'), uniqueValues(2), 'location');
+                if (key === 'company')  buildDynamicList(document.getElementById('list-company'),  uniqueValues('company'),   'company');
+                if (key === 'location') buildDynamicList(document.getElementById('list-location'), uniqueValues('location'),  'location');
             }
         });
     });
 
     document.getElementById('list-period').querySelectorAll('input[type=radio]').forEach(inp => {
-        inp.addEventListener('change', () => {
-            state.period = inp.value;
-            updateBtn('period');
-            applyFilters();
-        });
+        inp.addEventListener('change', () => { state.period = inp.value; updateBtn('period'); applyFilters(); });
     });
 
     document.querySelectorAll('.filter-drop').forEach(d => d.addEventListener('click', e => e.stopPropagation()));
     document.addEventListener('click', () => document.querySelectorAll('.filter-drop').forEach(d => d.hidden = true));
 
     document.getElementById('reset-filters').addEventListener('click', () => {
-        state.company = [];
-        state.location = [];
-        state.period = 'all';
+        state.company = []; state.location = []; state.period = 'all';
         ['company', 'location', 'period'].forEach(updateBtn);
         document.querySelectorAll('#list-period input[value="all"]').forEach(i => i.checked = true);
         applyFilters();
     });
+
+    applyFilters();
 })();
 </script>
 {% endblock %}
